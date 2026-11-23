@@ -1,0 +1,232 @@
+# =============================================================================
+#  RELAY PROTOCOL — tunable values
+#  Units: metres, seconds, degrees. Everything gameplay-relevant lives here so it
+#  can be tuned without touching code. Phase 2/3 sections are read by later
+#  phases; they are declared now so the full tuning surface is in one place.
+# =============================================================================
+
+[window]
+title          = "Relay Protocol"
+fullscreen     = false
+vsync          = true
+show_fps       = true
+fov            = 90.0
+mouse_sensitivity = 40.0     # same scale as Ursina's built-in controller (higher = faster)
+invert_y       = false
+
+[teams]
+# Display names only — internal code uses "attackers"/"defenders".
+# NOTE: "Vanguard" is also the name of Riot's anti-cheat and "Sentinels" is a
+# well-known esports organisation in tactical shooters. Neither is Valve IP,
+# but consider more distinctive names before any public release.
+attackers_name  = "Vanguard"
+attackers_short = "VAN"
+defenders_name  = "Sentinel"
+defenders_short = "SEN"
+
+[graphics]
+sun_shadows    = false       # true looks nicer but costs FPS on integrated GPUs
+sky_color      = [0.10, 0.13, 0.19]
+
+[movement]
+physics_hz     = 120         # fixed simulation rate (sub-steps per second)
+gravity        = 20.0        # m/s^2
+terminal_velocity = 30.0
+jump_velocity  = 6.4         # ~1.0 m standing jump apex
+jump_buffer    = 0.10        # seconds a jump press is remembered before landing
+
+run_speed      = 6.2         # top ground speed, m/s
+walk_speed     = 3.4         # hold Shift (quiet movement in later phases)
+crouch_speed   = 2.4
+ground_accel   = 9.0         # how quickly you reach wish-speed on the ground
+air_accel      = 1.6         # weak air control
+air_speed_cap  = 0.9         # max speed added per air-accel step (limits air strafing)
+friction       = 6.5         # ground friction
+stop_speed     = 2.0         # friction floor so you come to a crisp stop
+
+[player]
+radius         = 0.30        # half-width of the collision box
+stand_height   = 1.80
+crouch_height  = 1.20
+stand_eye      = 1.62
+crouch_eye     = 1.05
+crouch_transition = 0.12     # seconds to blend eye height
+step_height    = 0.55        # max ledge you can walk up without jumping
+max_health     = 100
+max_armor      = 100
+
+# =============================================================================
+#  PHASE 2 — combat
+# =============================================================================
+[combat]
+headshot_multiplier        = 3.6   # head hits without a helmet
+helmet_headshot_multiplier = 2.2   # head hits on a helmeted target
+armor_absorption = 0.55            # fraction of damage the armor soaks up
+armor_wear       = 0.50            # armor points lost per point of damage absorbed
+friendly_fire    = false
+
+[combat.spread]
+# Movement inaccuracy uses horizontal speed / movement.run_speed (0..1+).
+# Shots also get a random offset inside a cone of the current spread (degrees).
+center_bias = 1.0                  # 1 = uniform radius (center-weighted area), 2 = tighter core
+
+[view]
+crosshair_gap_per_degree = 0.006   # dynamic crosshair: extra gap per degree of spread
+hitmarker_time = 0.18
+damage_flash_time = 0.35
+crosshair_color = "Green"
+crosshair_size = 0.018
+crosshair_thickness = 0.003
+crosshair_gap = 0.006
+crosshair_style = "Cross"
+crosshair_dynamic = true
+screen_static = false
+
+# -----------------------------------------------------------------------------
+#  Weapon definitions. Every value here is original to this project.
+#  spread_*  : cone half-angle in degrees
+#  recoil_*  : degrees of aim kick per shot; recovery is an exponential rate (1/s)
+#  view_kick_ratio: share of recoil the camera shows (rest = bullets above crosshair)
+#  falloff_per_10m: damage multiplier per 10 m travelled
+# -----------------------------------------------------------------------------
+[weapons.rk9]
+name = "RK-9 Rifle"
+slot = 1
+kind = "hitscan"
+automatic = true
+damage = 31
+rpm = 600
+mag_size = 30
+reserve = 90
+reload_time = 2.4
+deploy_time = 0.55
+range = 140.0
+falloff_per_10m = 0.97
+spread_stand  = 0.20
+spread_crouch = 0.12
+spread_move   = 4.0      # added at full run speed (scaled by speed)
+spread_air    = 9.0
+bloom_per_shot = 0.38
+bloom_max      = 4.0
+bloom_recovery = 7.0     # degrees per second
+recoil_vertical        = 0.85
+recoil_vertical_growth = 0.07   # each of the first ~8 shots kicks a bit harder
+recoil_vertical_max    = 11.0
+recoil_horizontal      = 0.55
+recoil_recovery        = 7.5
+view_kick_ratio = 0.5
+speed_multiplier = 0.88
+
+[weapons.sd4]
+name = "SD-4 Sidearm"
+slot = 2
+kind = "hitscan"
+automatic = false
+damage = 24
+rpm = 380
+mag_size = 12
+reserve = 36
+reload_time = 1.9
+deploy_time = 0.35
+range = 90.0
+falloff_per_10m = 0.90
+spread_stand  = 0.28
+spread_crouch = 0.18
+spread_move   = 2.2
+spread_air    = 6.0
+bloom_per_shot = 0.9
+bloom_max      = 3.2
+bloom_recovery = 9.0
+recoil_vertical        = 1.5
+recoil_vertical_growth = 0.0
+recoil_vertical_max    = 6.0
+recoil_horizontal      = 0.3
+recoil_recovery        = 10.0
+view_kick_ratio = 0.6
+speed_multiplier = 0.97
+
+[weapons.knife]
+name = "Field Knife"
+slot = 3
+kind = "melee"
+damage = 45
+rpm = 80                 # one swing every 0.75 s
+range = 1.9
+melee_arc = 40.0         # total horizontal arc in degrees (5 rays)
+deploy_time = 0.3
+speed_multiplier = 1.25  # +25% movement while the knife is out
+
+# =============================================================================
+#  PHASE 2 — bots
+# =============================================================================
+[bots]
+enabled = true
+allies  = 3              # bots on the player's team
+enemies = 4
+infinite_reserve = true
+health  = 100            # armor/helmet are bought each round (see [economy])
+think_interval = 0.15    # seconds between perception checks
+vision_range   = 70.0
+vision_fov     = 140.0   # degrees; anything within 4 m is noticed regardless
+reaction_time  = 0.35    # delay between first sighting and first shot
+reaction_jitter = 0.15
+turn_speed     = 320.0   # degrees per second
+aim_error_deg  = 1.4     # standard deviation of the aim offset
+aim_error_reroll = 0.5   # seconds between new aim offsets
+aim_tolerance_deg = 4.0  # fire once aim is within this of the target
+recoil_control = 0.65    # fraction of recoil the bot compensates
+memory_time    = 1.5     # seconds a lost target is remembered
+burst_min = 3
+burst_max = 7
+burst_pause = 0.35
+move_speed_scale = 0.92
+idle_min = 1.0
+idle_max = 3.5
+hold_min = 6.0           # seconds a guarding bot stays on one spot before rotating
+hold_max = 14.0
+names = ["Kestrel", "Basalt", "Juniper", "Halyard", "Marrow", "Tamsin",
+         "Quill", "Brindle", "Osprey", "Lumen", "Cobble", "Fennick"]
+
+[nav]
+cell = 1.0               # navigation grid resolution (metres)
+clearance_radius = 0.4   # bots keep this far from walls
+max_drop = 4.0           # bots will walk off ledges up to this height
+
+# =============================================================================
+#  PHASE 3 — flag objective, rounds, match, economy
+#  Every number below is original to this project.
+# =============================================================================
+[flag]
+plant_time       = 3.0     # hold E inside a site while carrying the flag
+takedown_time    = 5.0     # hold E next to a planted flag (defenders)
+post_plant_time  = 25.0    # planted flag countdown; expiry = attackers win
+flag_return_time = 20.0    # a dropped flag untouched this long returns to attacker spawn
+carrier_speed_multiplier = 0.85
+pickup_radius    = 1.5     # walk this close to a dropped flag to pick it up
+interact_radius  = 2.0     # takedown reach from the planted flag
+interrupt_speed  = 0.6     # m/s; moving faster than this resets plant/takedown progress
+
+[round]
+freeze_time      = 15.0    # buy phase: movement locked, buy menu open
+round_time       = 105.0   # 1:45 of live play
+round_end_delay  = 5.0     # winner banner before the next round
+elimination_wins = true    # a side with nobody left loses (planted flag still needs a takedown)
+
+[match]
+rounds_to_win = 5
+player_team   = "attackers"          # "attackers" (Vanguard) or "defenders" (Sentinel)
+# TODO(later phase): side swap at halftime is not implemented; sides stay fixed.
+swap_sides_at_halftime = false
+
+[economy]
+start_money       = 1000
+max_money         = 12000
+kill_reward       = 250
+round_win_reward  = 3000
+loss_bonus_ladder = [1000, 1500, 2000, 2500, 3000]   # indexed by consecutive losses
+free_loadout      = ["knife"]        # everyone always has these
+keep_weapons_if_alive = true         # survivors keep bought weapons into the next round
+rk9_price    = 2800
+sd4_price    = 450
+armor_price  = 600
+helmet_price = 400
